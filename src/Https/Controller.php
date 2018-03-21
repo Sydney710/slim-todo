@@ -27,7 +27,7 @@ class Controller
             "status" => $status,
             "info" => $info,
         ];
-        if (empty($playload)) {
+        if (!empty($playload)) {
             $data["data"] = $playload;
         }
         return $this->container->response->withJson($data, 200, JSON_UNESCAPED_UNICODE);
