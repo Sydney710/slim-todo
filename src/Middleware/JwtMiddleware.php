@@ -145,7 +145,7 @@ class JwtMiddleware
         try {
             $jwt = (array)JWT::decode($token, $key, ['HS256']);
         } catch (\Exception $e) {
-            throw new TodoException("Token 异常", -1);
+            throw new TodoException($e->getMessage(), -1);
         }
         return $jwt;
     }
