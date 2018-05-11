@@ -4,6 +4,7 @@ namespace App\Https;
 
 use App\Exceptions\TodoException;
 use App\Models\Account;
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Slim\Container;
 use Slim\Http\Request;
@@ -45,10 +46,9 @@ class AuthController extends Controller
         if ($user->is_lock == "T") {
             throw new TodoException("账号已锁定");
         }
-        list($token, $refresh) = $this->buildToken($req->getUri()->getHost(), $user);
+        $token = $this->buildToken($req->getUri()->getHost(), $user);
 
         return $res->withHeader("X-Token", $token)
-            ->withHeader("X-Refresh-Token", $refresh)
             ->withJson(["status" => 1, "info" => "OK"]);
     }
 
@@ -56,24 +56,49 @@ class AuthController extends Controller
      * 刷新Token
      *
      * @param Request $req
+     * @param Response $res
+     * @return Response|static
      */
-    public function refresh(Request $req)
+    public function refresh(Request $req, Response $res)
     {
+        $token = $req->getHeaderLine('X-Token');
+        try {
+            $jwt = JWT::decode($token, $this->jwtConf['key'], ['HS256']);
+            $account = Account::find(hash2id($jwt["uid"]));
+            $token = $this->buildToken($req->getUri()->getHost(), $account);
+            return $res->withHeader("X-Token", $token)
+                ->withJson(["status" => 1, "info" => "OK"]);
+        } catch (ExpiredException $e) {
+            $tokenBody = explode('.', $token)[1];
+            $tokenBody = JWT::urlsafeB64Decode($tokenBody);
+            $jwt = json_decode($tokenBody, true);
+            $iat = $jwt["iat"];
+            $refreshTtl = $this->jwtConf['refresh_ttl'];
+            if ($iat + $refreshTtl < time()) {
+                return jsonRes(-1, 'Token已过刷新期' . ($iat + $refreshTtl) . ', ' . time() . print_r($jwt, true));
+            }
+            $account = Account::find(hash2id($jwt["uid"]));
+            $token = $this->buildToken($req->getUri()->getHost(), $account);
+            return $res->withHeader("X-Token", $token)
+                ->withJson(["status" => 1, "info" => "OK"]);
+        } catch (\Exception $e) {
+            return jsonRes(0, "Token错误");
+        }
+
 
     }
 
     /**
      * 生成Token
      *
-     * @param $host
-     * @param $account
-     * @return array
+     * @param string $host
+     * @param Account $account
+     * @return string $token
      */
     private function buildToken($host, $account)
     {
         $jwtKey = $this->jwtConf['key'];
         $ttl = $this->jwtConf['ttl'];
-        $refreshTtl = $this->jwtConf['ttl_refresh'];
 
         $baseData = [
             "iss" => $host,
@@ -84,10 +109,6 @@ class AuthController extends Controller
         $token = JWT::encode(array_merge($baseData, [
             "uid" => id2hash($account->id),
         ]), $jwtKey);
-
-        $refresh = JWT::encode(array_merge([
-            "exp" => strtotime("+{$refreshTtl} days")
-        ], ["token" => $token]), $jwtKey);
-        return [$token, $refresh];
+        return $token;
     }
 }
