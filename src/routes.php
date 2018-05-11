@@ -33,10 +33,7 @@ $app->group("/v1.0", function () use ($app) {
         $app->post("/tag", TagController::class . ":store");
         $app->put("/tag/{id}", TagController::class . ':update');
         $app->delete("/tag/{id}", TagController::class . ':destroy');
-    })->add(new \App\Middleware\JwtMiddleware($app->getContainer(), [
-        'paths' => ['/v1.0'],
-        'through' => ['/v1.0/init', '/v1.0/auth/token'],
-    ]))->add(Permission::class);
+    })->add(new \App\Middleware\JwtMiddleware($app->getContainer()))->add(Permission::class);
 
 
 });

@@ -14,4 +14,9 @@ class Account extends Model
 
     protected $guarded = [];
 
+    public function tags()
+    {
+        return $this->hasMany(Tag::class, 'account_id', 'id');
+    }
+
 }
