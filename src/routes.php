@@ -4,22 +4,14 @@ use App\Https\AuthController;
 use App\Https\ProjectController;
 use App\Https\TodoController;
 use App\Https\TagController;
-use App\Middleware\AuthMiddleware as Auth;
 use App\Middleware\PermissionMiddleware as Permission;
 
 $app->group("/v1.0", function () use ($app) {
 
-    $app->get("/test", function(){
-        $this->logger->info("ABC");
-       return json_encode([
-           "status" => 1,
-           "info" => "OK",
-           "data" => [
-               "word" => "hello world",
-           ]
-       ]);
-    });
-    $app->post("/auth", AuthController::class . ":auth");
+    $app->get("/init", \App\Https\DevelopController::class . ':init');
+    $app->get("/test", \App\Https\DevelopController::class . ':test');
+
+    $app->post("/auth/token", AuthController::class . ":auth");
     $app->post("/auth/refresh", AuthController::class . ':refresh');
 
     $app->group("", function () use ($app) {
@@ -27,6 +19,7 @@ $app->group("/v1.0", function () use ($app) {
         $app->get("/project", ProjectController::class . ':home');
         $app->post("/project", ProjectController::class . ':store');
         $app->put("/project/{id}", ProjectController::class . ':update');
+        $app->delete("/project/{id}", ProjectController::class . ':destroy');
 
         // 作务管理
         $app->get("/todo", TodoController::class . ':home');
@@ -40,7 +33,7 @@ $app->group("/v1.0", function () use ($app) {
         $app->post("/tag", TagController::class . ":store");
         $app->put("/tag/{id}", TagController::class . ':update');
         $app->delete("/tag/{id}", TagController::class . ':destroy');
-    })->add(Auth::class)->add(Permission::class);
+    })->add(Permission::class);
 
 
 });

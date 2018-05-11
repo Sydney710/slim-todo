@@ -2,7 +2,9 @@
 
 namespace App\Https;
 
+use App\Exceptions\TodoException;
 use Slim\Container;
+use Slim\Http\Request;
 
 class Controller
 {
@@ -33,4 +35,17 @@ class Controller
         return $this->container->response->withJson($data, 200, JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * @param Request $req
+     * @return mixed
+     * @throws TodoException
+     */
+    public function getAccount(Request $req)
+    {
+        $account = $req->getAttribute("jwt");
+        if (empty($account)) {
+            throw new TodoException("请先登录");
+        }
+        return $account;
+    }
 }

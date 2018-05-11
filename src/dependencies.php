@@ -33,3 +33,22 @@ $container['db'] = function (Container $c) {
     $capsule->bootEloquent();
     return $capsule;
 };
+$container->get('db');
+
+$container['errorHandler'] = function (Container $c) {
+    return function ($req, $res, $e) {
+        return $res->withJson([
+            "status" => $e->getCode(),
+            "info" => $e->getMessage()
+        ]);
+    };
+};
+
+$container['notAllowedHandler'] = function () {
+    return function ($req, $res, $allowMethod) {
+        return $res->withJson([
+            "status" => 0,
+            "info" => "请求方法错误"
+        ]);
+    };
+};

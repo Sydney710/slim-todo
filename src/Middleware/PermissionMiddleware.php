@@ -13,7 +13,7 @@ use Slim\Http\Response;
  */
 class PermissionMiddleware
 {
-    public function handle(Request $req, Response $res, callable $next)
+    public function __invoke(Request $req, Response $res, callable $next)
     {
         //todo...
         return $next($req, $res);
